@@ -36,6 +36,7 @@
     using Nop.Plugin.Api.IdentityServer.Middlewares;
     using Nop.Plugin.Api.WebHooks;
     using ApiResource = IdentityServer4.EntityFramework.Entities.ApiResource;
+    using Swashbuckle.AspNetCore.Swagger;
 
     public class ApiStartup : INopStartup
     {
@@ -56,20 +57,22 @@
         public void Configure(IApplicationBuilder app)
         {
             // The default route templates for the Swagger docs and swagger - ui are "swagger/docs/{apiVersion}" and "swagger/ui/index#/{assetPath}" respectively.
-            //app.UseSwagger();
-            //app.UseSwaggerUI(options =>
-            //    {
-            //        //var currentAssembly = Assembly.GetAssembly(this.GetType());
-            //        //var currentAssemblyName = currentAssembly.GetName().Name;
+            app.UseStaticFiles();
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+                {
+                    //var currentAssembly = Assembly.GetAssembly(this.GetType());
+                    //var currentAssemblyName = currentAssembly.GetName().Name;
 
-            //        //Needeed for removing the "Try It Out" button from the post and put methods.
-            //        //http://stackoverflow.com/questions/36772032/swagger-5-2-3-supportedsubmitmethods-removed/36780806#36780806
+                    //Needeed for removing the "Try It Out" button from the post and put methods.
+                    //http://stackoverflow.com/questions/36772032/swagger-5-2-3-supportedsubmitmethods-removed/36780806#36780806
 
-            //        //options.InjectOnCompleteJavaScript($"{currentAssemblyName}.Scripts.swaggerPostPutTryItOutButtonsRemoval.js");
+                    //options.InjectOnCompleteJavaScript($"{currentAssemblyName}.Scripts.swaggerPostPutTryItOutButtonsRemoval.js");
 
-            //        options.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-            //    }
-            //);
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "POS API V1");
+                }
+            );
+
 
             // This needs to be called here because in the plugin install method identity server is not yet registered.
             ApplyIdentityServerMigrations(app);
@@ -77,15 +80,20 @@
             SeedData(app);
 
             var rewriteOptions = new RewriteOptions()
-                .AddRewrite("oauth/(.*)", "connect/$1",true)
-                .AddRewrite("api/token", "connect/token",true);
+                .AddRewrite("oauth/(.*)", "connect/$1", true)
+                .AddRewrite("api/token", "connect/token", true);
 
             app.UseRewriter(rewriteOptions);
 
             app.UseMiddleware<IdentityServerScopeParameterMiddleware>();
 
             ////uncomment only if the client is an angular application that directly calls the oauth endpoint
-            //// app.UseCors(Microsoft.Owin.Cors.CorsOptions.AllowAll);
+            app.UseCors(builder => builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials());
+
             UseIdentityServer(app);
         }
 
@@ -270,6 +278,13 @@
         {
             // If no binding redirects are present in the config file then this will perform the binding redirect
             RedirectAssembly("Microsoft.AspNetCore.DataProtection.Abstractions", new Version(2, 0, 0, 0), "adb9793829ddae60");
+            RedirectAssembly("Microsoft.Extensions.FileProviders.Embedded", new Version(2, 0, 0, 0), "adb9793829ddae60");
+            RedirectAssembly("Microsoft.AspNetCore.StaticFiles", new Version(2, 0, 1, 0), "adb9793829ddae60");
+            RedirectAssembly("Microsoft.AspNetCore.Mvc.Formatters.Json", new Version(2, 0, 2, 0), "adb9793829ddae60");
+            RedirectAssembly("Microsoft.AspNetCore.Mvc.ApiExplorer", new Version(2, 0, 2, 0), "adb9793829ddae60");
+            RedirectAssembly("Microsoft.AspNetCore.Routing", new Version(2, 0, 1, 0), "adb9793829ddae60");
+            RedirectAssembly("Microsoft.IdentityModel.Tokens", new Version(5, 1, 5, 0), "31bf3856ad364e35");
+            RedirectAssembly("System.IdentityModel.Tokens.Jwt", new Version(5, 1, 5, 0), "31bf3856ad364e35");
         }
 
         ///<summary>Adds an AssemblyResolve handler to redirect all attempts to load a specific assembly name to the specified version.</summary>
